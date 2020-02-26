@@ -1,11 +1,21 @@
 package util.fwk.reflect;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import javax.validation.constraints.Min;
+
+import com.sun.javadoc.ThrowsTag;
+
 import data.Movie;
+import util.fwk.reflect.exception.ConstraintMinException;
+import util.fwk.reflect.exception.ReflectException;
+import util.fwk.reflect.exception.TypeMismatchException;
 
 public class Tools {
 
@@ -24,13 +34,23 @@ public class Tools {
 				.collect(Collectors.joining(", ")));
 //				.limit(5)
 //				.forEach(System.out::println);
+		Arrays.stream(objectClass.getMethods())
+				.map(AccessibleObject::getAnnotations)
+				.filter(a ->a.length>0)
+				.map(Arrays::toString)
+				.forEach(System.out::println);
 		System.out.println("Getters :"+Arrays.stream(objectClass.getMethods())
 				.map(Method::getName)
 				.filter(n ->n.matches("(get|is)[A-Z].*") && !n.equals("getClass")) 
 				.collect(Collectors.joining(", ")));
 		System.out.println("Fields :"+Arrays.toString(objectClass.getFields()));
-		System.out.println("Declared fields :"+Arrays.toString(objectClass.getDeclaredFields()));
 		
+		System.out.println("Declared fields :"+Arrays.toString(objectClass.getDeclaredFields()));
+		Arrays.stream(objectClass.getDeclaredFields())
+				.map(AccessibleObject::getAnnotations)
+				.filter(a ->a.length>0)
+				.map(Arrays::toString)
+				.forEach(System.out::println);
 		
 	}
 
@@ -62,6 +82,47 @@ public class Tools {
 			throw new ReflectException("error retrieving field value by reflection",e);
 		}
 	
+	}
+	
+	public static <T> void minValidation(T t) {
+		
+		Arrays.stream(t.getClass().getDeclaredFields())
+				.filter(f->f.getAnnotation(Min.class)!=null)
+				.forEach(f->minFieldValidation(t, f, f.getAnnotation(Min.class)));
+	}
+	
+	/**
+	 * 
+	 * @param <T>
+	 * @param t
+	 * @param field
+	 * @param minAnnotation
+	 * @throws ConstraintMinException
+	 * @throws TypeMismatchException
+	 */
+	public static <T> void minFieldValidation(T t, Field field, Min minAnnotation) 
+			throws ConstraintMinException, TypeMismatchException 
+	{
+		
+		long minValue =minAnnotation.value();
+		String fieldName= field.getName();
+		Class <?> fieldType = field.getType();
+		System.out.println(minValue+", " +fieldName+", " + fieldType);
+		// TODO : en fonction du type du field
+		if(fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
+			int fieldValue = getFieldValue(t,fieldName,Integer.class);
+			System.out.println("fieldValue :"+fieldValue);
+			System.out.println("minValue :"+minValue);
+			if (fieldValue<minValue)
+				throw new ConstraintMinException(minValue, fieldValue);
+				
+		} else if(fieldType.equals(int.class) || fieldType.equals(Integer.class)) {
+			long fieldValue = getFieldValue(t,fieldName,Long.class);
+			if (fieldValue<minValue)
+				throw new ConstraintMinException(minValue, fieldValue);			
+		}else {
+			throw new TypeMismatchException(long.class, fieldType);
+		}
 	}
 	
 	

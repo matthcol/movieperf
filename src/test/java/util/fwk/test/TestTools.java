@@ -2,10 +2,14 @@ package util.fwk.test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import javax.validation.constraints.Min;
+
 import org.junit.jupiter.api.Test;
 
 import data.Movie;
 import util.fwk.reflect.Tools;
+import util.fwk.reflect.exception.ConstraintMinException;
+import util.fwk.reflect.exception.TypeMismatchException;
 
 class TestTools {
 
@@ -36,5 +40,39 @@ class TestTools {
 		//then
 		assertEquals(duration, fieldValue);
 	}
+	
+	@Test
+	void testMinValidationOk() {
+		
+		//given
+		Movie m = new Movie("Le roi lion", 1994, 88);
+		//when
+		Tools.minValidation(m);
+		//then : no think to do
+	}
+	
+	@Test
+	void testMinValidationNotMinimumOk() {
+		
+		//given
+		Movie m = new Movie("Le roi lion", 1789, 88);
+		//when + then
+		assertThrows(ConstraintMinException.class,
+				()->Tools.minValidation(m));
+	}
+	
+	@Test
+	void testMinValidationWrongType() {
+		
+		//given
+		WrongClassMovie m = new WrongClassMovie();
+		//when + then
+		assertThrows(TypeMismatchException.class,
+				()->Tools.minValidation(m));
+	}
+}
 
+class WrongClassMovie{
+	@Min(0)
+	private String title;
 }

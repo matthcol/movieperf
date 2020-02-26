@@ -1,5 +1,7 @@
 package data;
 
+import util.fwk.reflect.annotation.Column;
+
 public abstract class WorkOfArt {
 
 	private String title;
@@ -13,6 +15,7 @@ public abstract class WorkOfArt {
 		this.title = title;
 	}
 	
+	@Column
 	public String getTitle() {
 		return title;
 	}

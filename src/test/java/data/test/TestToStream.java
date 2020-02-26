@@ -2,20 +2,25 @@ package data.test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collector;
+import java.util.stream.Collector.Characteristics;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import data.Movie;
 
@@ -47,6 +52,66 @@ class TestToStream {
 		.sum();
 		System.out.println("Durée totale :"+toatalDuration + " h");
 	}
+	
+	@ParameterizedTest
+	@ValueSource(ints = {2000,2050})
+	void testAverageDurationConsumer(int anneeSeuil) {
+		 movies.stream()
+			.filter(m->m.getAnnee()>anneeSeuil)
+			.mapToInt(m->m.getDuration())
+			.average()
+			//.ifPresent(System.out::println);
+			.ifPresentOrElse(System.out::println,
+					()->System.err.println("No data to compute average duration"));
+	}
+	
+	
+	@Test
+	void testAverageDurationComputeDataPresent() {
+		// rare use case : data is present for sure
+		double averageDuration = movies.stream()
+			.mapToInt(m->m.getDuration())
+			.average()
+			.getAsDouble();
+		//what's next after computing
+		System.out.println(averageDuration);
+	}
+	
+	@ParameterizedTest
+	@ValueSource(ints = {2000,2050})
+	void testAverageDurationCompute(int anneeSeuil) {
+		OptionalDouble optAverage = movies.stream()
+			.filter(m->m.getAnnee()>anneeSeuil)
+			.mapToInt(m->m.getDuration())
+			.average()
+			.stream()
+			.map(a->Math.sqrt(a*a + 1))
+			.average();
+		//what's next after computing
+		System.out.println(optAverage);
+	}
+	
+	@Test
+	void testCollectOptionalAverageDuration() {
+		int firstYear = 1990;
+		int stepYear = 10;
+		int nbYear = 7;
+		double minAverage = 1d;
+		List<Double> averageDurations = IntStream.iterate(firstYear, y->y+stepYear)
+				.limit(nbYear)
+				.mapToObj(y -> movies.stream()
+						.filter(m -> (m.getAnnee()>y-5) && (m.getAnnee()<y+5))
+						.mapToInt(Movie::getDuration)
+						.average())		
+				.filter(OptionalDouble::isPresent)
+				.mapToDouble(OptionalDouble::getAsDouble)
+				.filter(a -> a>=minAverage)
+				//.mapToObj(a -> a)
+				.mapToObj(Double::valueOf)
+				.collect(Collectors.toList());
+		System.out.println(averageDurations);
+	}
+	
 	@Test
 	void collectFilm2000() {
 	//.out.println(movies);
@@ -103,4 +168,16 @@ class TestToStream {
 		System.out.println(listMovie.getClass());
 		
 	}
+	
+	@Test
+	void testConcurrentCollector() {
+		var cols = List.of(Collectors.toList(), Collectors.toCollection(TreeSet::new),
+				Collectors.counting(), Collectors.groupingByConcurrent(Movie::getAnnee));
+		cols.stream()
+				.map(Collector::characteristics)
+				.forEach(System.out::println);
+		//System.out.println(c.characteristics());
+		
+	}
+	
 }

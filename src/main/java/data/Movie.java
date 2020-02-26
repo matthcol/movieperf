@@ -2,6 +2,12 @@ package data;
 
 import java.io.Serializable;
 
+import javax.validation.constraints.Min;
+
+import util.fwk.reflect.annotation.Column;
+import util.fwk.reflect.annotation.Entity;
+
+@Entity(name = "movies")
 public class Movie extends WorkOfArt implements Serializable{
 
 	/**
@@ -9,7 +15,11 @@ public class Movie extends WorkOfArt implements Serializable{
 	 */
 	private static final long serialVersionUID = -6678809181338412709L;
 
+	
+	@Min(1850)
 	private int annee;
+
+	@Min(0)
 	private int duration;
 	
 	public Movie() {
@@ -26,7 +36,7 @@ public class Movie extends WorkOfArt implements Serializable{
 		this(title,annee,0);
 	}
 
-
+	@Column
 	public int getAnnee() {
 		return annee;
 	}
@@ -34,7 +44,7 @@ public class Movie extends WorkOfArt implements Serializable{
 	public void setAnnee(int annee) {
 		this.annee = annee;
 	}
-
+	@Column
 	public int getDuration() {
 		return duration;
 	}
